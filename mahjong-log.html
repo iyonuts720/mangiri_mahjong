@@ -1000,7 +1000,12 @@ function renderHistory(){
   wrap.querySelectorAll('.del-btn').forEach(btn=>{
     btn.addEventListener('click', e=>{
       const id = Number(e.target.closest('.history-item').dataset.id);
+      const target = data.records.find(r=>r.id === id);
       data.records = data.records.filter(r=>r.id !== id);
+      // その日の対局が0件になったら、チップなどの日別データも削除する
+      if(target && !data.records.some(r=>r.date === target.date)){
+        delete data.dayExtras[target.date];
+      }
       save();
       render();
     });
@@ -1173,7 +1178,9 @@ function computeStats(records){
     });
 
     let totalChip = 0;
-    Object.values(data.dayExtras).forEach(ex=>{
+    const datesWithRecords = new Set(records.map(r=>r.date));
+    Object.entries(data.dayExtras).forEach(([date, ex])=>{
+      if(!datesWithRecords.has(date)) return;
       totalChip += (ex.chips || [0,0,0,0])[i] || 0;
     });
 
