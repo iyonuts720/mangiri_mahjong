@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麻雀記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --felt: #16332b;
+    --felt-line: #2c5347;
+    --cream: #f2ecdd;
+    --cream-soft: #e8e0cc;
+    --ink: #2b2620;
+    --ink-soft: #786f5e;
+    --red: #b5402f;
+    --gold: #c8a86b;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header{
+    background: var(--felt);
+    color: var(--cream);
+    padding: 28px 20px 24px;
+    border-bottom: 6px solid var(--gold);
+  }
+  header h1{
+    font-family: "Shippori Mincho", serif;
+    font-weight: 700;
+    font-size: 28px;
+    margin: 0;
+    letter-spacing: 0.08em;
+  }
+  header p{
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--cream-soft);
+    letter-spacing: 0.05em;
+  }
+
+  main{
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 18px 14px 60px;
+  }
+
+  .card{
+    background: #fff;
+    border: 1px solid var(--cream-soft);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 0 var(--cream-soft);
+  }
+
+  .card h2{
+    font-family: "Shippori Mincho", serif;
+    font-size: 16px;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card h2::before{
+    content:"";
+    display:inline-block;
+    width: 10px;
+    height: 14px;
+    background: var(--felt);
+    border-radius: 2px;
+    border: 1px solid var(--gold);
+  }
+  .card .sub-note{
+    font-size: 11px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin: -8px 0 14px;
+  }
+
+  /* インポート */
+  .import-card p{
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    margin: 0 0 10px;
+  }
+  .btn-secondary{
+    background: var(--cream);
+    color: var(--felt);
+    border: 1px solid var(--felt);
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+  }
+  .btn-secondary:active{ background: var(--cream-soft); }
+  .import-card .btn-secondary{ width: 100%; }
+
+  /* 対局入力：共通フィールド */
+  .row-2col{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .field label{
+    display:block;
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .field input, .field select{
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--cream-soft);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .score-input{
+    font-family: "JetBrains Mono", monospace;
+    text-align: right;
+  }
+
+  /* プレイヤーごとカード（入力・編集 共通） */
+  .entry-player-card{
+    border: 1px solid var(--cream-soft);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--cream);
+  }
+  .entry-player-card h3{
+    font-family: "Shippori Mincho", serif;
+    font-size: 14px;
+    margin: 0 0 8px;
+    color: var(--felt);
+  }
+  .entry-row{
+    display:flex;
+    gap: 8px;
+    align-items: end;
+  }
+  .entry-row .field{ flex: 1; }
+  .entry-row .field input{
+    background: #fff;
+    padding: 7px 8px;
+    font-size: 13px;
+  }
+  .checkbox-field{
+    display:flex;
+    align-items: center;
+    gap: 4px;
+    padding-bottom: 8px;
+  }
+  .checkbox-field label{
+    font-size: 11px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .checkbox-field input{
+    width: 18px;
+    height: 18px;
+    accent-color: var(--red);
+  }
+
+  .sum-check{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 4px 2px 14px;
+    text-align: right;
+    font-family: "JetBrains Mono", monospace;
+  }
+  .sum-check.ok{ color: var(--felt); }
+  .sum-check.bad{ color: var(--red); }
+
+  button{
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-primary{
+    background: var(--felt);
+    color: var(--cream);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+  }
+  .btn-primary:active{ background: var(--felt-line); }
+
+  .edit-actions{
+    display:flex;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .edit-actions button{ flex: 1; }
+  .edit-actions .btn-primary{ width: auto; }
+  .edit-actions .btn-secondary{ width: auto; }
+
+  /* 折りたたみ見出し */
+  .collapsible-head{
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .toggle-arrow{
+    font-size: 11px;
+    color: var(--ink-soft);
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+  .collapsed .toggle-arrow{ transform: rotate(-90deg); }
+  .collapsed .collapsible-body{ display: none; }
+
+  /* 履歴 */
+  .history-day-group{
+    margin-bottom: 16px;
+    border: 1px solid var(--cream-soft);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .history-day-group:last-child{ margin-bottom: 0; }
+  .history-day-title{
+    font-size: 13px;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    color: var(--felt);
+  }
+  .history-day-title .day-games{
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-weight: 500;
+    margin-left: 6px;
+  }
+  .history-day-body{
+    margin-top: 10px;
+  }
+  .history-item{
+    border: 1px solid var(--cream-soft);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: #fff;
+  }
+  .history-item:last-child{ margin-bottom: 0; }
+  .history-item.editing{ background: var(--cream); }
+  .history-head{
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .history-hanchan{
+    font-size: 12px;
+    font-family: "Shippori Mincho", serif;
+    color: var(--ink-soft);
+  }
+  .history-actions{
+    display:flex;
+    gap: 10px;
+  }
+  .history-action-btn{
+    background: none;
+    color: var(--ink-soft);
+    font-size: 11px;
+    padding: 2px 4px;
+    text-decoration: underline;
+  }
+  .history-action-btn.danger{ color: var(--red); }
+  .tile-row{
+    display:grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .tile{
+    background: var(--cream);
+    border: 1px solid var(--cream-soft);
+    border-radius: 6px;
+    padding: 6px 4px;
+    text-align: center;
+    position: relative;
+  }
+  .tile.rank-1{ border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+  .tile-name{
+    font-size: 10px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tile-score{
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+  .tile-score.neg{ color: var(--red); }
+  .tile-rank{
+    font-size: 9px;
+    color: var(--gold);
+    font-family: "Shippori Mincho", serif;
+    margin-top: 2px;
+  }
+  .tile-pt{
+    font-size: 10px;
+    font-family: "JetBrains Mono", monospace;
+    margin-top: 2px;
+    color: var(--ink-soft);
+  }
+  .tile-pt.neg{ color: var(--red); }
+  .tile-pt.pos{ color: var(--felt); font-weight: 700; }
+  .tag-row{
+    display:flex;
+    gap: 3px;
+    justify-content: center;
+    margin-top: 3px;
+  }
+  .tobi-tag{
+    display:inline-block;
+    font-size: 9px;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-family: "Shippori Mincho", serif;
+  }
+  .tobi-tag.busted{ color: var(--red); border: 1px solid var(--red); }
+  .tobi-tag.tobashi{ color: var(--felt); border: 1px solid var(--felt); }
+  .history-memo{
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 8px;
+  }
+  .empty{
+    text-align:center;
+    color: var(--ink-soft);
+    font-size: 13px;
+    padding: 20px 0;
+  }
+
+  /* 日別集計 */
+  .day-card{
+    border: 1px solid var(--cream-soft);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .day-card:last-child{ margin-bottom: 0; }
+  .day-date{
+    font-size: 13px;
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+  }
+  .day-games{
+    font-size: 11px;
+    color: var(--ink-soft);
+    margin-left: 6px;
+  }
+  .day-extra-table{
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .day-extra-table th{
+    font-size: 10px;
+    color: var(--ink-soft);
+    text-align: right;
+    padding: 2px 4px;
+    font-weight: 500;
+  }
+  .day-extra-table th:first-child{ text-align: left; }
+  .day-extra-table td{
+    padding: 3px 4px;
+  }
+  .day-extra-table td.name{
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .day-extra-table td.computed{
+    text-align: right;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .day-extra-table input{
+    width: 100%;
+    padding: 5px 6px;
+    border: 1px solid var(--cream-soft);
+    border-radius: 5px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 12px;
+    text-align: right;
+  }
+
+  /* 集計：プレイヤーカード */
+  .stat-card{
+    border: 1px solid var(--cream-soft);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .stat-card:last-child{ margin-bottom: 0; }
+  .stat-card h3{
+    font-family: "Shippori Mincho", serif;
+    font-size: 15px;
+    margin: 0 0 8px;
+    display:flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .stat-card h3 .games-count{
+    font-size: 11px;
+    color: var(--ink-soft);
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-weight: 500;
+  }
+  .rank-counts{
+    display:flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .rank-counts span{
+    flex:1;
+    text-align:center;
+    background: var(--cream);
+    border-radius: 6px;
+    padding: 5px 2px;
+    font-size: 11px;
+  }
+  .rank-counts span b{
+    display:block;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+  .stat-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px 10px;
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  .stat-grid .label{ color: var(--ink-soft); font-size: 10px; }
+  .stat-grid .value{
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .rank-badge{
+    font-family: "Zen Kaku Gothic New", sans-serif;
+    font-weight: 500;
+    font-size: 9px;
+    color: var(--ink-soft);
+    margin-left: 3px;
+  }
+  .totals-row{
+    display:flex;
+    gap: 10px;
+    border-top: 1px solid var(--cream-soft);
+    padding-top: 8px;
+    font-size: 12px;
+  }
+  .totals-row > div{ flex: 1; }
+  .totals-row .label{ color: var(--ink-soft); font-size: 10px; }
+  .totals-row .value{
+    font-family: "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .neg{ color: var(--red); }
+  .pos{ color: var(--felt); }
+
+  .save-note{
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-align: center;
+    margin-top: -4px;
+  }
+
+  /* 注目トピック */
+  .topic-player-card{
+    border: 1px solid var(--cream-soft);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .topic-player-card:last-child{ margin-bottom: 0; }
+  .topic-player-card h3{
+    font-family: "Shippori Mincho", serif;
+    font-size: 14px;
+    margin: 0 0 6px;
+    color: var(--felt);
+  }
+  .topic-player-card p{
+    font-size: 13px;
+    line-height: 1.7;
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>麻雀記録</h1>
+  <p>対局結果をかんたんに記録・集計</p>
+</header>
+
+<main>
+
+  <section class="card" id="syncCard">
+    <p class="sub-note" id="syncStatus" style="margin:0 0 10px;">みんなと共有中のデータを表示しています。</p>
+    <button class="btn-secondary" id="refreshBtn" style="width:100%;">最新の状態に更新</button>
+  </section>
+
+  <section class="card" id="migrateCard">
+    <p class="sub-note" style="margin:0 0 10px;">
+      現在のデータをJSONファイルとして書き出します。Firebaseの「Realtime Database」の管理画面で、このファイルを「JSONをインポート」機能から読み込むことでデータを移行できます。
+    </p>
+    <button class="btn-secondary" id="exportJsonBtn" style="width:100%;">データをJSONで書き出す</button>
+  </section>
+
+  <section class="card" id="entryCard">
+    <h2>対局を記録する</h2>
+    <div class="row-2col">
+      <div class="field">
+        <label>日付</label>
+        <input type="date" id="inputDate">
+      </div>
+      <div class="field">
+        <label>メモ（任意）</label>
+        <input type="text" id="inputMemo" placeholder="例: 〇〇杯 第3戦">
+      </div>
+    </div>
+    <div id="entryCards"></div>
+    <div class="sum-check" id="sumCheck"></div>
+    <button class="btn-primary" id="addBtn" style="width:100%;">この結果を記録する</button>
+  </section>
+
+  <section class="card">
+    <h2>集計</h2>
+    <p class="sub-note">
+      ポイント = (得点-30,000)を1,000点単位で五捨六入（500点以下切り捨て・600点以上切り上げ）し、
+      ウマ（2位+10 / 3位-10 / 4位-30 / 1位はのこり）と、飛び(-10)・飛ばし(+10)を加算したもの。<br>
+      マギー = ポイント×50 ＋ チップ×100。各項目の「○位」は4人中の順位です。
+    </p>
+    <div id="statCards"></div>
+  </section>
+
+  <section class="card">
+    <h2>注目トピック</h2>
+    <div id="topicsList"></div>
+  </section>
+
+  <section class="card">
+    <h2>日別集計</h2>
+    <div id="dayList"></div>
+  </section>
+
+  <section class="card">
+    <h2>履歴</h2>
+    <div id="historyList"></div>
+  </section>
+
+</main>
+
+<script>
+const STORAGE_KEY = 'mahjong-log-data-v5';
+const PLAYERS = ['石川', '伊与部', '木村', '九鬼'];
+const IMPORT_VERSION = 5; // pt/順位が編集で書き換わってしまったケースを、得点・フラグは保持したまま修復
+
+let data = {
+  records: [],   // {id, date, memo, scores:[4], busted:[4], tobashi:[4]}
+  dayExtras: {}  // { 'YYYY-MM-DD': { chips:[4] } }
+};
+
+// 表示状態（保存はしない・リロードでリセット）
+let collapsedDayDates = null;   // 日別集計の折りたたみ状態
+let collapsedHistDates = null;  // 履歴の折りたたみ状態
+let editingRecordId = null;     // 履歴の編集中ID
+
+/* ---------- ユーティリティ ---------- */
+
+function fmtNum(v, unit){
+  const n = Math.round(Number(v) || 0);
+  const sign = n < 0 ? '▲' : '';
+  const cls = n < 0 ? 'neg' : (n > 0 ? 'pos' : '');
+  const text = sign + Math.abs(n).toLocaleString() + (unit || '');
+  return { text, cls };
+}
+
+function fmtScore(v){
+  const n = Number(v) || 0;
+  if(n < 0) return '▲' + Math.abs(n).toLocaleString();
+  return n.toLocaleString();
+}
+
+function todayStr(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function calcRanks(values){
+  const sorted = [...values].map((s,i)=>({s,i})).sort((a,b)=>b.s - a.s);
+  const ranks = new Array(values.length);
+  for(let pos=0; pos<values.length; pos++){
+    if(pos>0 && sorted[pos].s === sorted[pos-1].s){
+      ranks[sorted[pos].i] = ranks[sorted[pos-1].i];
+    } else {
+      ranks[sorted[pos].i] = pos+1;
+    }
+  }
+  return ranks;
+}
+
+// 値の配列から「良い順」のランク(1-4)を返す。higherIsBetter=falseなら小さいほど1位
+function rankAcross(values, higherIsBetter){
+  const sorted = values.map((v,i)=>({v,i})).sort((a,b)=> higherIsBetter ? b.v-a.v : a.v-b.v);
+  const ranks = new Array(values.length);
+  for(let pos=0; pos<values.length; pos++){
+    if(pos>0 && sorted[pos].v === sorted[pos-1].v){
+      ranks[sorted[pos].i] = ranks[sorted[pos-1].i];
+    } else {
+      ranks[sorted[pos].i] = pos+1;
+    }
+  }
+  return ranks;
+}
+
+// 得点 -> ポイント（オカ・ウマ・五捨六入・飛び/飛ばし調整込み）
+function calcPoints(scores, busted, tobashi){
+  const ranks = calcRanks(scores);
+
+  const basePts = scores.map(s=>{
+    const diff = s - 30000;
+    const floorK = Math.floor(diff/1000)*1000;
+    const remainder = diff - floorK; // 0-900
+    const adjusted = remainder <= 500 ? floorK : floorK + 1000;
+    return adjusted / 1000;
+  });
+
+  const sumBase = basePts.reduce((a,b)=>a+b, 0);
+  const umaByRank = { 2: 10, 3: -10, 4: -30, 1: 30 - sumBase };
+
+  const pts = scores.map((s,i)=> basePts[i] + umaByRank[ranks[i]]);
+
+  (busted || [false,false,false,false]).forEach((b,i)=>{ if(b) pts[i] -= 10; });
+  (tobashi || [false,false,false,false]).forEach((t,i)=>{ if(t) pts[i] += 10; });
+
+  return pts;
+}
+
+// 半荘のポイントを取得。インポートデータは pt をスプレッドシートの値で固定（rec.pt）し、
+// それ以外は得点・飛び・飛ばしから計算式で求める。
+function getPts(rec){
+  if(rec.pt) return rec.pt;
+  return calcPoints(rec.scores, rec.busted, rec.tobashi);
+}
+
+// 半荘の順位（集計・トップ率などに使う「表の順位」）を取得。
+// インポートデータはスプレッドシートの順位で固定（rec.rank）し、飛び/飛ばしを編集しても変化しない。
+// それ以外は得点から計算する。
+function getRanks(rec){
+  if(rec.rank) return rec.rank;
+  return calcRanks(rec.scores);
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+function getDayExtra(date){
+  if(!data.dayExtras[date]){
+    data.dayExtras[date] = { chips:[0,0,0,0] };
+  }
+  if(!data.dayExtras[date].chips){
+    data.dayExtras[date].chips = [0,0,0,0];
+  }
+  return data.dayExtras[date];
+}
+
+function getDates(){
+  return [...new Set(data.records.map(r=>r.date))].sort((a,b)=> b.localeCompare(a));
+}
+
+/* ---------- プレイヤー入力カード（新規・編集 共通） ---------- */
+
+function playerCardHTML(i, opts){
+  // opts: { scoreVal, busted, tobashi, idPrefix, scoreClass, bustedClass, tobashiClass }
+  const name = PLAYERS[i];
+  const bustedId = `${opts.idPrefix}-busted-${i}`;
+  const tobashiId = `${opts.idPrefix}-tobashi-${i}`;
+  return `
+    <div class="entry-player-card">
+      <h3>${escapeHtml(name)}</h3>
+      <div class="entry-row">
+        <div class="field">
+          <label>得点</label>
+          <input type="number" step="100" class="score-input ${opts.scoreClass}" data-index="${i}" placeholder="25000" value="${opts.scoreVal ?? ''}">
+        </div>
+        <div class="checkbox-field">
+          <input type="checkbox" class="${opts.bustedClass}" data-index="${i}" id="${bustedId}" ${opts.busted ? 'checked' : ''}>
+          <label for="${bustedId}">飛び</label>
+        </div>
+        <div class="checkbox-field">
+          <input type="checkbox" class="${opts.tobashiClass}" data-index="${i}" id="${tobashiId}" ${opts.tobashi ? 'checked' : ''}>
+          <label for="${tobashiId}">飛ばし</label>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- 対局入力 ---------- */
+
+function renderEntryCards(){
+  const wrap = document.getElementById('entryCards');
+  wrap.innerHTML = '';
+  PLAYERS.forEach((name, i)=>{
+    wrap.insertAdjacentHTML('beforeend', playerCardHTML(i, {
+      scoreVal: '',
+      busted: false,
+      tobashi: false,
+      idPrefix: 'new',
+      scoreClass: 'new-score',
+      bustedClass: 'new-busted',
+      tobashiClass: 'new-tobashi'
+    }));
+  });
+  wrap.querySelectorAll('.new-score').forEach(inp=>{
+    inp.addEventListener('input', updateSumCheck);
+  });
+  updateSumCheck();
+}
+
+function updateSumCheck(){
+  const inputs = document.querySelectorAll('.new-score');
+  let sum = 0;
+  let anyFilled = false;
+  inputs.forEach(inp=>{
+    if(inp.value !== '') anyFilled = true;
+    sum += Number(inp.value) || 0;
+  });
+  const el = document.getElementById('sumCheck');
+  if(!anyFilled){
+    el.textContent = '';
+    el.className = 'sum-check';
+    return;
+  }
+  el.textContent = `得点合計: ${fmtScore(sum)} ${sum===100000 ? '(OK)' : '(本来は100,000)'}`;
+  el.className = 'sum-check ' + (sum===100000 ? 'ok' : 'bad');
+}
+
+document.getElementById('addBtn').addEventListener('click', ()=>{
+  const date = document.getElementById('inputDate').value || todayStr();
+  const memo = document.getElementById('inputMemo').value.trim();
+
+  const scores = [0,0,0,0];
+  const busted = [false,false,false,false];
+  const tobashi = [false,false,false,false];
+
+  document.querySelectorAll('.new-score').forEach(inp=> scores[Number(inp.dataset.index)] = Number(inp.value) || 0);
+  document.querySelectorAll('.new-busted').forEach(inp=> busted[Number(inp.dataset.index)] = inp.checked);
+  document.querySelectorAll('.new-tobashi').forEach(inp=> tobashi[Number(inp.dataset.index)] = inp.checked);
+
+  data.records.push({
+    id: Date.now(),
+    date,
+    memo,
+    scores,
+    busted,
+    tobashi
+  });
+  save();
+
+  document.getElementById('inputMemo').value = '';
+  renderEntryCards();
+  render();
+});
+
+/* ---------- 履歴 ---------- */
+
+function renderHistory(){
+  const wrap = document.getElementById('historyList');
+  wrap.innerHTML = '';
+  if(data.records.length === 0){
+    wrap.innerHTML = '<p class="empty">まだ記録がありません</p>';
+    return;
+  }
+  const dates = getDates();
+
+  if(collapsedHistDates === null){
+    collapsedHistDates = new Set(dates.slice(1)); // 最新日だけ展開
+  }
+
+  dates.forEach(date=>{
+    const dayRecords = data.records.filter(r=>r.date === date).sort((a,b)=> a.id - b.id);
+    const collapsed = collapsedHistDates.has(date);
+
+    const group = document.createElement('div');
+    group.className = 'history-day-group' + (collapsed ? ' collapsed' : '');
+    group.dataset.date = date;
+
+    let bodyHtml = '';
+    dayRecords.forEach((rec, idx)=>{
+      if(editingRecordId === rec.id){
+        bodyHtml += `
+          <div class="history-item editing" data-id="${rec.id}">
+            <div class="history-head">
+              <span class="history-hanchan">第${idx+1}半荘（編集中）</span>
+            </div>
+            ${PLAYERS.map((name,i)=> playerCardHTML(i, {
+              scoreVal: rec.scores[i],
+              busted: (rec.busted||[false,false,false,false])[i],
+              tobashi: (rec.tobashi||[false,false,false,false])[i],
+              idPrefix: `edit-${rec.id}`,
+              scoreClass: 'edit-score',
+              bustedClass: 'edit-busted',
+              tobashiClass: 'edit-tobashi'
+            })).join('')}
+            <div class="field">
+              <label>メモ</label>
+              <input type="text" class="edit-memo" value="${escapeHtml(rec.memo || '')}">
+            </div>
+            <div class="edit-actions">
+              <button class="btn-primary edit-save">保存</button>
+              <button class="btn-secondary edit-cancel">キャンセル</button>
+            </div>
+          </div>
+        `;
+      } else {
+        const pts = getPts(rec);
+        const ranks = getRanks(rec);
+        bodyHtml += `
+          <div class="history-item" data-id="${rec.id}">
+            <div class="history-head">
+              <span class="history-hanchan">第${idx+1}半荘</span>
+              <div class="history-actions">
+                <button class="history-action-btn edit-btn">編集</button>
+                <button class="history-action-btn danger del-btn">削除</button>
+              </div>
+            </div>
+            <div class="tile-row">
+              ${rec.scores.map((s,i)=>{
+                const busted = (rec.busted || [false,false,false,false])[i];
+                const tobashi = (rec.tobashi || [false,false,false,false])[i];
+                const ptFmt = fmtNum(pts[i], 'pt');
+                let tags = '';
+                if(busted || tobashi){
+                  tags = '<div class="tag-row">';
+                  if(busted) tags += '<span class="tobi-tag busted">飛び</span>';
+                  if(tobashi) tags += '<span class="tobi-tag tobashi">飛ばし</span>';
+                  tags += '</div>';
+                }
+                return `
+                <div class="tile ${ranks[i]===1 ? 'rank-1' : ''}">
+                  <div class="tile-name">${escapeHtml(PLAYERS[i])}</div>
+                  <div class="tile-score ${s<0 ? 'neg':''}">${fmtScore(s)}</div>
+                  <div class="tile-rank">${ranks[i]}位</div>
+                  <div class="tile-pt ${ptFmt.cls}">${ptFmt.text}</div>
+                  ${tags}
+                </div>`;
+              }).join('')}
+            </div>
+            ${rec.memo ? `<div class="history-memo">${escapeHtml(rec.memo)}</div>` : ''}
+          </div>
+        `;
+      }
+    });
+
+    group.innerHTML = `
+      <div class="collapsible-head history-day-title">
+        <span>${date}<span class="day-games">${dayRecords.length}半荘</span></span>
+        <span class="toggle-arrow">▾</span>
+      </div>
+      <div class="history-day-body collapsible-body">${bodyHtml}</div>
+    `;
+
+    wrap.appendChild(group);
+  });
+
+  // 折りたたみ
+  wrap.querySelectorAll('.history-day-group > .collapsible-head').forEach(head=>{
+    head.addEventListener('click', e=>{
+      const group = e.currentTarget.closest('.history-day-group');
+      const date = group.dataset.date;
+      if(collapsedHistDates.has(date)){
+        collapsedHistDates.delete(date);
+      } else {
+        collapsedHistDates.add(date);
+      }
+      group.classList.toggle('collapsed');
+    });
+  });
+
+  // 削除
+  wrap.querySelectorAll('.del-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const id = Number(e.target.closest('.history-item').dataset.id);
+      data.records = data.records.filter(r=>r.id !== id);
+      save();
+      render();
+    });
+  });
+
+  // 編集開始
+  wrap.querySelectorAll('.edit-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      editingRecordId = Number(e.target.closest('.history-item').dataset.id);
+      renderHistory();
+    });
+  });
+
+  // 編集キャンセル
+  wrap.querySelectorAll('.edit-cancel').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      editingRecordId = null;
+      renderHistory();
+    });
+  });
+
+  // 編集保存
+  wrap.querySelectorAll('.edit-save').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const item = e.target.closest('.history-item');
+      const id = Number(item.dataset.id);
+      const rec = data.records.find(r=>r.id === id);
+      if(!rec) return;
+
+      const scores = [0,0,0,0];
+      const busted = [false,false,false,false];
+      const tobashi = [false,false,false,false];
+      item.querySelectorAll('.edit-score').forEach(inp=> scores[Number(inp.dataset.index)] = Number(inp.value) || 0);
+      item.querySelectorAll('.edit-busted').forEach(inp=> busted[Number(inp.dataset.index)] = inp.checked);
+      item.querySelectorAll('.edit-tobashi').forEach(inp=> tobashi[Number(inp.dataset.index)] = inp.checked);
+      rec.scores = scores;
+      rec.busted = busted;
+      rec.tobashi = tobashi;
+      rec.memo = item.querySelector('.edit-memo').value.trim();
+      // 得点・飛び・飛ばしは後から推察で入力する項目なので編集可能。
+      // ただし pt（合計ポイント）・順位（平均順位等の集計）はスプレッドシートの記録値として
+      // 固定済みのものは変更しない（rec.pt / rec.rank は保持する）。
+
+      editingRecordId = null;
+      save();
+      render();
+    });
+  });
+}
+
+/* ---------- 日別集計 ---------- */
+
+function renderDays(){
+  const wrap = document.getElementById('dayList');
+  wrap.innerHTML = '';
+
+  const dates = getDates();
+
+  if(dates.length === 0){
+    wrap.innerHTML = '<p class="empty">まだ記録がありません</p>';
+    return;
+  }
+
+  if(collapsedDayDates === null){
+    collapsedDayDates = new Set(dates.slice(1)); // 最新日だけ展開
+  }
+
+  dates.forEach(date=>{
+    const dayRecords = data.records.filter(r=>r.date === date);
+    const dayPts = [0,0,0,0];
+    dayRecords.forEach(rec=>{
+      const pts = getPts(rec);
+      pts.forEach((p,i)=> dayPts[i] += p);
+    });
+    const ranks = calcRanks(dayPts);
+    const extra = getDayExtra(date);
+    const collapsed = collapsedDayDates.has(date);
+
+    const card = document.createElement('div');
+    card.className = 'day-card' + (collapsed ? ' collapsed' : '');
+    card.dataset.date = date;
+    card.innerHTML = `
+      <div class="collapsible-head">
+        <span><span class="day-date">${date}</span><span class="day-games">${dayRecords.length}半荘</span></span>
+        <span class="toggle-arrow">▾</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="tile-row" style="margin-top:8px;">
+          ${PLAYERS.map((name,i)=>{
+            const p = fmtNum(dayPts[i], 'pt');
+            return `
+            <div class="tile ${ranks[i]===1 ? 'rank-1' : ''}">
+              <div class="tile-name">${escapeHtml(name)}</div>
+              <div class="tile-score ${p.cls==='neg' ? 'neg':''}">${p.text}</div>
+              <div class="tile-rank">${ranks[i]}位</div>
+            </div>`;
+          }).join('')}
+        </div>
+        <table class="day-extra-table">
+          <thead>
+            <tr><th></th><th>チップ</th><th>マギー</th></tr>
+          </thead>
+          <tbody>
+            ${PLAYERS.map((name,i)=>{
+              const chip = extra.chips[i] || 0;
+              const magie = dayPts[i]*50 + chip*100;
+              const magieFmt = fmtNum(magie, '');
+              return `
+              <tr>
+                <td class="name">${escapeHtml(name)}</td>
+                <td><input type="number" step="1" inputmode="numeric" class="chip-input" data-index="${i}" value="${chip}"></td>
+                <td class="computed ${magieFmt.cls}">${magieFmt.text}</td>
+              </tr>
+            `;}).join('')}
+          </tbody>
+        </table>
+        <button class="btn-secondary confirm-chip-btn" style="width:100%; margin-top:8px;">チップを確定</button>
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
+
+  // 折りたたみ
+  wrap.querySelectorAll('.day-card > .collapsible-head').forEach(head=>{
+    head.addEventListener('click', e=>{
+      const card = e.currentTarget.closest('.day-card');
+      const date = card.dataset.date;
+      if(collapsedDayDates.has(date)){
+        collapsedDayDates.delete(date);
+      } else {
+        collapsedDayDates.add(date);
+      }
+      card.classList.toggle('collapsed');
+    });
+  });
+
+  // チップ確定ボタン
+  wrap.querySelectorAll('.confirm-chip-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const card = e.target.closest('.day-card');
+      const date = card.dataset.date;
+      const ex = getDayExtra(date);
+      card.querySelectorAll('.chip-input').forEach(inp=>{
+        ex.chips[Number(inp.dataset.index)] = Number(inp.value) || 0;
+      });
+      save();
+      renderDays();
+      renderStats();
+    });
+  });
+}
+
+/* ---------- 集計 ---------- */
+
+// 指定した半荘の集合から、プレイヤーごとの集計値を算出する
+function computeStats(records){
+  const n = records.length;
+
+  return PLAYERS.map((name, i)=>{
+    let totalPt = 0;
+    let rankCount = [0,0,0,0]; // index 0 = 1位
+    let bustedCount = 0;
+
+    records.forEach(rec=>{
+      const pts = getPts(rec);
+      totalPt += pts[i];
+      if((rec.busted || [false,false,false,false])[i]) bustedCount++;
+      const ranks = getRanks(rec);
+      rankCount[ranks[i]-1]++;
+    });
+
+    let totalChip = 0;
+    Object.values(data.dayExtras).forEach(ex=>{
+      totalChip += (ex.chips || [0,0,0,0])[i] || 0;
+    });
+
+    const totalMagie = totalPt*50 + totalChip*100;
+
+    const topRate = n>0 ? rankCount[0]/n*100 : 0;
+    const rentaiRate = n>0 ? (rankCount[0]+rankCount[1])/n*100 : 0;
+    const lasaAvoidRate = n>0 ? (n-rankCount[3])/n*100 : 0;
+    const tobiRate = n>0 ? bustedCount/n*100 : 0;
+    const avgRank = n>0 ? (rankCount[0]*1 + rankCount[1]*2 + rankCount[2]*3 + rankCount[3]*4)/n : 0;
+
+    return { name, n, rankCount, totalPt, totalChip, totalMagie, topRate, rentaiRate, lasaAvoidRate, tobiRate, avgRank };
+  });
+}
+
+function renderStats(){
+  const wrap = document.getElementById('statCards');
+  wrap.innerHTML = '';
+
+  const n = data.records.length;
+  const stats = computeStats(data.records);
+
+  const topRanks = rankAcross(stats.map(s=>s.topRate), true);
+  const rentaiRanks = rankAcross(stats.map(s=>s.rentaiRate), true);
+  const lasaRanks = rankAcross(stats.map(s=>s.lasaAvoidRate), true);
+  const tobiRanks = rankAcross(stats.map(s=>s.tobiRate), false);
+  const avgRankRanks = rankAcross(stats.map(s=>s.avgRank), false);
+
+  stats.forEach((st, i)=>{
+    const ptFmt = fmtNum(st.totalPt, 'pt');
+    const magieFmt = fmtNum(st.totalMagie, 'マギー');
+    const chipFmt = fmtNum(st.totalChip, '枚');
+
+    const rb = r => n>0 ? `<span class="rank-badge">${r}位</span>` : '';
+
+    const card = document.createElement('div');
+    card.className = 'stat-card';
+    card.innerHTML = `
+      <h3>${escapeHtml(st.name)} <span class="games-count">${n}試合</span></h3>
+      <div class="rank-counts">
+        <span>1着<b>${st.rankCount[0]}</b></span>
+        <span>2着<b>${st.rankCount[1]}</b></span>
+        <span>3着<b>${st.rankCount[2]}</b></span>
+        <span>4着<b>${st.rankCount[3]}</b></span>
+      </div>
+      <div class="stat-grid">
+        <div><div class="label">トップ率</div><div class="value">${n>0?st.topRate.toFixed(1)+'%':'-'}${rb(topRanks[i])}</div></div>
+        <div><div class="label">連対率</div><div class="value">${n>0?st.rentaiRate.toFixed(1)+'%':'-'}${rb(rentaiRanks[i])}</div></div>
+        <div><div class="label">ラス回避率</div><div class="value">${n>0?st.lasaAvoidRate.toFixed(1)+'%':'-'}${rb(lasaRanks[i])}</div></div>
+        <div><div class="label">飛び率</div><div class="value">${n>0?st.tobiRate.toFixed(1)+'%':'-'}${rb(tobiRanks[i])}</div></div>
+        <div><div class="label">平均順位</div><div class="value">${n>0?st.avgRank.toFixed(2):'-'}${rb(avgRankRanks[i])}</div></div>
+      </div>
+      <div class="totals-row">
+        <div><div class="label">合計ポイント</div><div class="value ${ptFmt.cls}">${ptFmt.text}</div></div>
+        <div><div class="label">チップ収支</div><div class="value ${chipFmt.cls}">${chipFmt.text}</div></div>
+        <div><div class="label">マギー収支</div><div class="value ${magieFmt.cls}">${magieFmt.text}</div></div>
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
+}
+
+/* ---------- 注目トピック ---------- */
+
+function renderTopics(){
+  const wrap = document.getElementById('topicsList');
+  wrap.innerHTML = '';
+
+  if(data.records.length === 0){
+    wrap.innerHTML = '<p class="empty">記録が増えるとここに分析が表示されます</p>';
+    return;
+  }
+
+  try{
+    const current = computeStats(data.records);
+    const order = [...current].sort((a,b)=> b.totalPt - a.totalPt);
+
+    const dates = getDates(); // 新しい順
+    const latestDate = dates[0];
+    const latestRecords = data.records.filter(r=> r.date === latestDate);
+    const prevRecords = data.records.filter(r=> r.date !== latestDate);
+    const prevOrder = prevRecords.length > 0
+      ? [...computeStats(prevRecords)].sort((a,b)=> b.totalPt - a.totalPt)
+      : null;
+
+    const latestPts = [0,0,0,0];
+    latestRecords.forEach(rec=> getPts(rec).forEach((p,i)=> latestPts[i]+=p));
+
+    // 各指標で1位=最も良いランク
+    const topRateRanks = rankAcross(current.map(s=>s.topRate), true);
+    const tobiRanks = rankAcross(current.map(s=>s.tobiRate), false);
+    const magieRanks = rankAcross(current.map(s=>s.totalMagie), true);
+    const avgRankRanks = rankAcross(current.map(s=>s.avgRank), false);
+    const lasaRanks = rankAcross(current.map(s=>s.lasaAvoidRate), true);
+    const latestPtRanks = latestRecords.length>0 ? rankAcross(latestPts, true) : null;
+
+    const cards = current.map((st, i)=>{
+      const pos = order.findIndex(p=>p.name === st.name); // 0-3 = 現在の順位-1
+      const sentences = [];
+
+      // 1文目: 現在の立ち位置（どの順位でも前向きなトーンで）
+      if(pos === 0){
+        const gap = Math.round(st.totalPt - order[1].totalPt);
+        sentences.push(gap >= 50
+          ? `現在${fmtNum(st.totalPt,'pt').text}でトップを独走中。2位とは${gap}ptの大差をつけている。`
+          : `現在${fmtNum(st.totalPt,'pt').text}でトップに立っている。2位とは${gap}pt差で、いい勝負ができている。`);
+      } else if(pos === 3){
+        const gap = Math.round(order[2].totalPt - st.totalPt);
+        sentences.push(`現在4位、${fmtNum(st.totalPt,'pt').text}。3位とは${gap}pt差で射程圏内、ここから一気に巻き返せるポジションにいる。`);
+      } else {
+        const upGap = Math.round(order[pos-1].totalPt - st.totalPt);
+        const downGap = Math.round(st.totalPt - order[pos+1].totalPt);
+        sentences.push(`現在${pos+1}位、${fmtNum(st.totalPt,'pt').text}。${escapeHtml(order[pos-1].name)}選手まで${upGap}pt、${escapeHtml(order[pos+1].name)}選手とは${downGap}pt差という好位置にいる。`);
+      }
+
+      // 直近の対局での順位変動（褒め寄りの候補）
+      const praise = [];
+      const advice = [];
+
+      if(prevOrder){
+        const prevPos = prevOrder.findIndex(p=>p.name === st.name);
+        if(prevPos > pos){
+          const passed = prevOrder[pos];
+          praise.push(`直近の対局で${escapeHtml(passed.name)}選手を逆転、勢いに乗っている。`);
+        } else if(prevPos < pos){
+          advice.push(`直近で僅かに順位を落としたが、差はわずか。次の一戦ですぐに取り返せる距離感。`);
+        }
+      }
+
+      // 褒めポイント候補
+      if(topRateRanks[i] === 1) praise.push(`トップ率${st.topRate.toFixed(1)}%は4人中最高、攻めの姿勢が結果に出ている。`);
+      if(magieRanks[i] === 1) praise.push(`マギー収支は${fmtNum(st.totalMagie,'').text}で4人中トップ、懐は一番暖かい。`);
+      if(avgRankRanks[i] === 1) praise.push(`平均順位${st.avgRank.toFixed(2)}は4人中もっとも良く、堅実な戦い方が表れている。`);
+      if(st.tobiRate === 0 && st.n >= 4) praise.push(`${st.n}試合で飛びはゼロ、安定感がある。`);
+      if(latestPtRanks && latestPtRanks[i] === 1 && latestPts[i] > 0) praise.push(`直近の対局では${fmtNum(latestPts[i],'pt').text}と絶好調だった。`);
+      if(lasaRanks[i] === 1 && st.lasaAvoidRate >= 70) praise.push(`ラス回避率${st.lasaAvoidRate.toFixed(1)}%、めったにラスを引かない安定感がある。`);
+
+      // アドバイス候補（ポジティブな言い換え）
+      if(topRateRanks[i] === 4) advice.push(`トップ率${st.topRate.toFixed(1)}%は伸びしろのサイン。次に大きな手で1着を取れると、一気に流れが変わりそう。`);
+      if(st.tobiRate >= 10 && tobiRanks[i] === 4) advice.push(`飛び率${st.tobiRate.toFixed(1)}%はやや高め。勝負所を見極めれば、攻めの強さはそのままに安定感がもう一段上がりそう。`);
+      if(magieRanks[i] === 4) advice.push(`マギー収支は${fmtNum(st.totalMagie,'').text}で、ここが伸びしろ。一勝で大きく景色が変わる位置にいる。`);
+      if(latestPtRanks && latestPtRanks[i] === 4 && latestPts[i] < 0) advice.push(`直近の対局は${fmtNum(latestPts[i],'pt').text}で一旦ペースダウン。切り替えて次に勢いを持っていきたい。`);
+
+      // 褒め:アドバイス ≒ 7:3 を目安に、褒めを優先しつつ1つだけアドバイスを添える
+      praise.slice(0, 2).forEach(s=> sentences.push(s));
+      if(sentences.length < 3 && advice.length > 0){
+        sentences.push(advice[0]);
+      }
+      if(sentences.length < 3 && praise.length > 2){
+        sentences.push(praise[2]);
+      }
+
+      if(sentences.length < 2){
+        sentences.push(`平均順位${st.avgRank.toFixed(2)}、ラス回避率${st.lasaAvoidRate.toFixed(1)}%で着実に対局を重ねている。`);
+      }
+
+      return { name: st.name, text: sentences.slice(0,3).join('') };
+    });
+
+    wrap.innerHTML = cards.map(c=>`
+      <div class="topic-player-card">
+        <h3>${escapeHtml(c.name)}</h3>
+        <p>${c.text}</p>
+      </div>
+    `).join('');
+  }catch(err){
+    console.error(err);
+    wrap.innerHTML = '<p class="empty">分析の生成中にエラーが発生しました</p>';
+  }
+}
+
+// 各プレイヤーの半荘ごとのポイント（スプレッドシートの「.p」表記＝ポイントそのもの）
+const RAW_PT = {
+  '石川':   [-53,9,-14,14,-46,54,-25,-16,-72,-29,9,-47,-27,-24,5,-3,11,-27,92,-52,18,58,-17,10,14,6,6,-58,85,15,8,10,-52,-24,-23,-22,-27,-1,8,14],
+  '伊与部': [69,-57,10,-75,7,10,7,-57,18,-53,-14,12,-53,7,-20,15,55,-71,-32,7,60,-71,70,-71,-12,-17,63,12,-73,84,-46,51,10,66,4,26,-53,-72,73,-60],
+  '木村':   [3,75,76,62,65,-16,68,4,-16,16,55,62,-3,-51,-43,58,-44,11,-73,61,-53,25,-70,78,-57,-40,-45,74,23,-23,58,-20,57,8,69,71,14,-27,-8,63],
+  '九鬼':   [-19,-27,-72,-1,-26,-48,-50,69,70,66,-50,-27,83,68,58,-70,-22,87,13,-16,-25,-12,17,-17,55,51,-24,-28,-35,-76,-20,-41,-15,-50,-50,-75,66,100,-73,-17]
+};
+
+// 各プレイヤーの半荘ごとの順位（スプレッドシートの順位行）
+const RAW_RANK = {
+  '石川':   [4,2,3,2,4,1,3,3,4,3,2,4,3,3,2,3,2,3,1,4,2,1,3,2,2,2,2,4,1,2,2,2,4,3,3,3,3,2,2,2],
+  '伊与部': [1,4,2,4,2,2,2,4,2,4,3,2,4,2,3,2,1,4,3,2,1,4,1,4,3,3,1,2,4,1,4,1,2,1,2,2,4,4,1,4],
+  '木村':   [2,1,1,1,1,3,1,2,3,2,1,1,2,4,4,1,4,2,4,1,4,2,4,1,4,4,4,1,2,3,1,3,1,2,1,1,2,3,3,1],
+  '九鬼':   [3,3,4,3,3,4,4,1,1,1,4,3,1,1,1,4,3,1,2,3,3,3,2,3,1,1,3,3,3,4,3,4,3,4,4,4,1,1,4,3]
+};
+
+// 半荘ごとの日付（インデックス0-39に対応）
+const IMPORT_DATE_BLOCKS = [
+  { date: '2026-02-01', count: 6 },
+  { date: '2026-03-15', count: 8 },
+  { date: '2026-03-28', count: 10 },
+  { date: '2026-05-17', count: 8 },
+  { date: '2026-05-31', count: 8 }
+];
+const IMPORTED_DATES = IMPORT_DATE_BLOCKS.map(b=>b.date);
+
+// ポイント(+順位)から、五捨六入・ウマ・オカの式を逆算して得点を割り出す（参考値）。
+// 2-4位は basePt = pt - ウマ から score = 30000 + basePt*1000、
+// 1位は合計100,000点になるよう残りで決める（1位の点はptだけでは一意に決まらないため）。
+const UMA_BY_RANK = { 2: 10, 3: -10, 4: -30 };
+function reconstructScores(pts, ranks){
+  const scores = [0,0,0,0];
+  let sumOthers = 0;
+  for(let i=0;i<4;i++){
+    if(ranks[i] !== 1){
+      const basePt = pts[i] - UMA_BY_RANK[ranks[i]];
+      scores[i] = 30000 + basePt*1000;
+      sumOthers += scores[i];
+    }
+  }
+  for(let i=0;i<4;i++){
+    if(ranks[i] === 1) scores[i] = 100000 - sumOthers;
+  }
+  return scores;
+}
+
+function importHistoricalData(){
+  let idx = 0;
+  IMPORT_DATE_BLOCKS.forEach(block=>{
+    for(let g=0; g<block.count; g++){
+      const pts = PLAYERS.map(p=> RAW_PT[p][idx]);
+      const ranks = PLAYERS.map(p=> RAW_RANK[p][idx]);
+      const scores = reconstructScores(pts, ranks);
+
+      data.records.push({
+        id: Date.now() + idx,
+        date: block.date,
+        memo: '',
+        scores,
+        busted: [false,false,false,false],
+        tobashi: [false,false,false,false],
+        pt: pts,     // スプレッドシートのポイントを固定（飛び/飛ばし編集の有無に関わらず集計はこちらの順位を使う）
+        rank: ranks, // スプレッドシートの順位を固定（平均順位・トップ率などの集計に使用）
+        imported: true
+      });
+      idx++;
+    }
+  });
+
+  data.spreadsheetImported = true;
+  data.importVersion = IMPORT_VERSION;
+  collapsedDayDates = null;
+  collapsedHistDates = null;
+  applyHistoricalChips();
+  save();
+  render();
+}
+
+// 既にインポート済みの半荘について、pt・順位だけをスプレッドシートの値に修復する。
+// 得点・飛び・飛ばし・メモなど、後から編集した内容には触れない。
+// 各日付内では id の昇順（=取り込み順=スプレッドシートの半荘順）で対応させる。
+function repairImportedPtRank(){
+  let idx = 0;
+  IMPORT_DATE_BLOCKS.forEach(block=>{
+    const dayRecords = data.records.filter(r=>r.date === block.date).sort((a,b)=> a.id - b.id);
+    for(let g=0; g<block.count; g++){
+      const rec = dayRecords[g];
+      if(rec){
+        rec.pt = PLAYERS.map(p=> RAW_PT[p][idx]);
+        rec.rank = PLAYERS.map(p=> RAW_RANK[p][idx]);
+      }
+      idx++;
+    }
+  });
+}
+
+// スプレッドシートのO〜T列（18,20,22,24行目）のチップ枚数を日別集計に反映
+function applyHistoricalChips(){
+  const dayChipSource = {
+    '2026-02-01': [-6, 6, 5, -5],
+    '2026-03-15': [-12, 4, 2, 6],
+    '2026-03-28': [3, -6, -17, 20],
+    '2026-05-17': [-5, 5, 4, -4],
+    '2026-05-31': [-20, -18, 24, 14]
+  };
+  Object.entries(dayChipSource).forEach(([date, chips])=>{
+    getDayExtra(date).chips = [...chips];
+  });
+  data.chipsImported = true;
+}
+
+/* ---------- 全体 ---------- */
+
+function render(){
+  renderEntryCards();
+  renderStats();
+  renderTopics();
+  renderDays();
+  renderHistory();
+}
+
+// Firebase Realtime Database。みんなで共有するデータの保存先。
+// claude.aiのこのチャット内ではwindow.storageを優先し、ダウンロードしたファイルを
+// 普通のブラウザで開いた場合はFirebaseを使う（さらに失敗時はlocalStorage）。
+const FIREBASE_URL = 'https://mahjong-mangiri-default-rtdb.asia-southeast1.firebasedatabase.app';
+const FIREBASE_PATH = '/mahjongLog';
+
+async function storageSet(key, value){
+  if(window.storage){
+    try{
+      const result = await window.storage.set(key, value, false);
+      if(result) return true;
+    }catch(err){
+      // フォールバックへ
+    }
+  }
+  try{
+    const res = await fetch(`${FIREBASE_URL}${FIREBASE_PATH}.json`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: value
+    });
+    if(res.ok) return true;
+  }catch(err){
+    // フォールバックへ
+  }
+  try{
+    localStorage.setItem(key, value);
+    return true;
+  }catch(err){
+    console.error(err);
+    return false;
+  }
+}
+
+async function storageGet(key){
+  if(window.storage){
+    try{
+      const result = await window.storage.get(key, false);
+      if(result && result.value !== undefined && result.value !== null) return result.value;
+    }catch(err){
+      // フォールバックへ
+    }
+  }
+  try{
+    const res = await fetch(`${FIREBASE_URL}${FIREBASE_PATH}.json`);
+    if(res.ok){
+      const json = await res.json();
+      if(json !== null) return JSON.stringify(json);
+    }
+  }catch(err){
+    // フォールバックへ
+  }
+  try{
+    return localStorage.getItem(key);
+  }catch(err){
+    return null;
+  }
+}
+
+async function save(){
+  await storageSet(STORAGE_KEY, JSON.stringify(data));
+}
+
+async function load(){
+  try{
+    const value = await storageGet(STORAGE_KEY);
+    if(value){
+      const parsed = JSON.parse(value);
+      if(parsed.records) data = parsed;
+      if(!data.dayExtras) data.dayExtras = {};
+    }
+  }catch(err){
+    // 既存データなし
+  }
+
+  // 初回起動時、またはpt/順位の修復が必要な場合
+  if(data.spreadsheetImported && (data.importVersion||0) < IMPORT_VERSION){
+    // 得点・飛び・飛ばし・メモなど編集済みの内容はそのまま残し、pt・順位だけを修復する
+    repairImportedPtRank();
+    data.importVersion = IMPORT_VERSION;
+    save();
+  } else if(!data.spreadsheetImported && data.records.length === 0){
+    importHistoricalData();
+  }
+
+  // 既にスプレッドシートを読み込み済みでも、チップ枚数がまだ反映されていなければ追加で適用する
+  if(data.spreadsheetImported && !data.chipsImported){
+    applyHistoricalChips();
+    save();
+  }
+
+  document.getElementById('inputDate').value = todayStr();
+  render();
+}
+
+// 現在のデータをJSONファイルとして書き出す（Firebaseへのインポート用）
+document.getElementById('exportJsonBtn').addEventListener('click', ()=>{
+  // Firebaseのルートに /mahjongLog という階層でインポートする想定のJSON
+  const payload = { mahjongLog: data };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mahjong-data.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// 「最新の状態に更新」ボタン：他の人の編集をサーバーから取り込む
+document.getElementById('refreshBtn').addEventListener('click', async ()=>{
+  const statusEl = document.getElementById('syncStatus');
+  statusEl.textContent = '更新中...';
+  try{
+    const value = await storageGet(STORAGE_KEY);
+    if(value){
+      const parsed = JSON.parse(value);
+      if(parsed.records){
+        data = parsed;
+        if(!data.dayExtras) data.dayExtras = {};
+      }
+    }
+    editingRecordId = null;
+    render();
+    statusEl.textContent = 'みんなと共有中のデータを表示しています。';
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = '更新に失敗しました。通信状態を確認してください。';
+  }
+});
+
+load();
+</script>
+
+</body>
+</html>
