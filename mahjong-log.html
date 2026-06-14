@@ -511,9 +511,95 @@
     line-height: 1.7;
     margin: 0;
   }
+
+  /* パスワードロック */
+  .lock-screen{
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--felt);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  body.locked .lock-screen{ display: flex; }
+  body.locked .app-content{ display: none; }
+  .lock-box{
+    background: var(--cream);
+    border: 1px solid var(--gold);
+    border-radius: 12px;
+    padding: 24px 20px;
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+  }
+  .lock-box h2{
+    font-family: "Shippori Mincho", serif;
+    margin: 0 0 8px;
+    color: var(--felt);
+  }
+  .lock-box p{
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+  .lock-box input{
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--cream-soft);
+    border-radius: 8px;
+    font-size: 16px;
+    margin-bottom: 10px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .lock-error{
+    color: var(--red);
+    font-size: 12px;
+    min-height: 1.4em;
+    margin: 0 0 8px;
+  }
+
+  /* ポイントの推移グラフ */
+  .chart-legend{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+  .chart-legend-item{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .chart-legend-swatch{
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .chart-legend-value{
+    color: var(--ink-soft);
+    margin-left: 2px;
+  }
 </style>
 </head>
-<body>
+<body class="locked">
+
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-box">
+    <h2>麻雀記録</h2>
+    <p>パスワードを入力してください</p>
+    <input type="password" id="lockInput" inputmode="text" placeholder="パスワード">
+    <p class="lock-error" id="lockError"></p>
+    <button class="btn-primary" id="lockBtn" style="width:100%;">開く</button>
+  </div>
+</div>
+
+<div class="app-content">
 
 <header>
   <h1>麻雀記録</h1>
@@ -525,13 +611,6 @@
   <section class="card" id="syncCard">
     <p class="sub-note" id="syncStatus" style="margin:0 0 10px;">みんなと共有中のデータを表示しています。</p>
     <button class="btn-secondary" id="refreshBtn" style="width:100%;">最新の状態に更新</button>
-  </section>
-
-  <section class="card" id="migrateCard">
-    <p class="sub-note" style="margin:0 0 10px;">
-      現在のデータをJSONファイルとして書き出します。Firebaseの「Realtime Database」の管理画面で、このファイルを「JSONをインポート」機能から読み込むことでデータを移行できます。
-    </p>
-    <button class="btn-secondary" id="exportJsonBtn" style="width:100%;">データをJSONで書き出す</button>
   </section>
 
   <section class="card" id="entryCard">
@@ -567,6 +646,11 @@
   </section>
 
   <section class="card">
+    <h2>ポイントの推移</h2>
+    <div id="chartCard"></div>
+  </section>
+
+  <section class="card">
     <h2>日別集計</h2>
     <div id="dayList"></div>
   </section>
@@ -577,6 +661,8 @@
   </section>
 
 </main>
+
+</div>
 
 <script>
 const STORAGE_KEY = 'mahjong-log-data-v5';
@@ -1259,6 +1345,94 @@ function renderTopics(){
   }
 }
 
+/* ---------- ポイントの推移グラフ ---------- */
+
+const CHART_COLORS = ['#16332b', '#b5402f', '#3d6b9e', '#a6792e'];
+
+function renderChart(){
+  const wrap = document.getElementById('chartCard');
+  wrap.innerHTML = '';
+
+  if(data.records.length === 0){
+    wrap.innerHTML = '<p class="empty">記録が増えるとここに推移グラフが表示されます</p>';
+    return;
+  }
+
+  try{
+    // 日付順（同日内はid順）に並べる
+    const sorted = [...data.records].sort((a,b)=>{
+      if(a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return a.id - b.id;
+    });
+
+    // 0半荘目（開始時点=0）からの累計ptを各プレイヤーごとに算出
+    const cum = PLAYERS.map(()=>[0]);
+    sorted.forEach(rec=>{
+      const pts = getPts(rec);
+      PLAYERS.forEach((_, i)=>{
+        const series = cum[i];
+        series.push(series[series.length-1] + pts[i]);
+      });
+    });
+
+    const n = cum[0].length; // = sorted.length + 1
+    const allValues = cum.flat();
+    let minV = Math.min(...allValues, 0);
+    let maxV = Math.max(...allValues, 0);
+    if(minV === maxV){ minV -= 10; maxV += 10; }
+    // 上下に少し余白
+    const pad = (maxV - minV) * 0.08;
+    minV -= pad;
+    maxV += pad;
+
+    const W = 600, H = 240;
+    const marginLeft = 46, marginRight = 10, marginTop = 12, marginBottom = 12;
+    const plotW = W - marginLeft - marginRight;
+    const plotH = H - marginTop - marginBottom;
+
+    const x = (i)=> marginLeft + (n === 1 ? 0 : (i/(n-1)) * plotW);
+    const y = (v)=> marginTop + (maxV - v) / (maxV - minV) * plotH;
+
+    const zeroY = y(0);
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%; height:220px; display:block;">`;
+
+    // 0ptのグリッド線
+    svg += `<line x1="${marginLeft}" y1="${zeroY}" x2="${W-marginRight}" y2="${zeroY}" stroke="var(--cream-soft)" stroke-width="1" stroke-dasharray="4 4" />`;
+    svg += `<text x="${marginLeft-6}" y="${zeroY+4}" text-anchor="end" font-size="11" fill="var(--ink-soft)">0</text>`;
+
+    // 上端・下端のラベル
+    svg += `<text x="${marginLeft-6}" y="${marginTop+10}" text-anchor="end" font-size="11" fill="var(--ink-soft)">${Math.round(maxV)}</text>`;
+    svg += `<text x="${marginLeft-6}" y="${H-marginBottom}" text-anchor="end" font-size="11" fill="var(--ink-soft)">${Math.round(minV)}</text>`;
+
+    // 各プレイヤーの折れ線
+    PLAYERS.forEach((name, i)=>{
+      const points = cum[i].map((v, idx)=> `${x(idx).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
+      svg += `<polyline points="${points}" fill="none" stroke="${CHART_COLORS[i]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />`;
+    });
+
+    svg += `</svg>`;
+
+    // 凡例（現在の累計ptも併記）
+    const legend = PLAYERS.map((name, i)=>{
+      const total = cum[i][cum[i].length-1];
+      const fmt = fmtNum(total, 'pt');
+      return `
+        <div class="chart-legend-item">
+          <span class="chart-legend-swatch" style="background:${CHART_COLORS[i]}"></span>
+          <span>${escapeHtml(name)}</span>
+          <span class="chart-legend-value ${fmt.cls}">${fmt.text}</span>
+        </div>
+      `;
+    }).join('');
+
+    wrap.innerHTML = svg + `<div class="chart-legend">${legend}</div>`;
+  }catch(err){
+    console.error(err);
+    wrap.innerHTML = '<p class="empty">グラフの生成中にエラーが発生しました</p>';
+  }
+}
+
 // 各プレイヤーの半荘ごとのポイント（スプレッドシートの「.p」表記＝ポイントそのもの）
 const RAW_PT = {
   '石川':   [-53,9,-14,14,-46,54,-25,-16,-72,-29,9,-47,-27,-24,5,-3,11,-27,92,-52,18,58,-17,10,14,6,6,-58,85,15,8,10,-52,-24,-23,-22,-27,-1,8,14],
@@ -1376,6 +1550,7 @@ function render(){
   renderEntryCards();
   renderStats();
   renderTopics();
+  renderChart();
   renderDays();
   renderHistory();
 }
@@ -1475,22 +1650,6 @@ async function load(){
   render();
 }
 
-// 現在のデータをJSONファイルとして書き出す（Firebaseへのインポート用）
-document.getElementById('exportJsonBtn').addEventListener('click', ()=>{
-  // Firebaseのルートに /mahjongLog という階層でインポートする想定のJSON
-  const payload = { mahjongLog: data };
-  const json = JSON.stringify(payload, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'mahjong-data.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
-
 // 「最新の状態に更新」ボタン：他の人の編集をサーバーから取り込む
 document.getElementById('refreshBtn').addEventListener('click', async ()=>{
   const statusEl = document.getElementById('syncStatus');
@@ -1511,6 +1670,36 @@ document.getElementById('refreshBtn').addEventListener('click', async ()=>{
     console.error(err);
     statusEl.textContent = '更新に失敗しました。通信状態を確認してください。';
   }
+});
+
+/* ---------- パスワードロック ---------- */
+
+const UNLOCK_PASSWORD = 'ryogoku';
+const UNLOCK_KEY = 'mahjong-log-unlocked';
+
+function tryUnlock(){
+  const input = document.getElementById('lockInput');
+  const error = document.getElementById('lockError');
+  if(input.value === UNLOCK_PASSWORD){
+    try{ localStorage.setItem(UNLOCK_KEY, 'yes'); }catch(e){}
+    document.body.classList.remove('locked');
+    error.textContent = '';
+  } else {
+    error.textContent = 'パスワードが違います';
+    input.value = '';
+    input.focus();
+  }
+}
+
+try{
+  if(localStorage.getItem(UNLOCK_KEY) === 'yes'){
+    document.body.classList.remove('locked');
+  }
+}catch(e){}
+
+document.getElementById('lockBtn').addEventListener('click', tryUnlock);
+document.getElementById('lockInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') tryUnlock();
 });
 
 load();
