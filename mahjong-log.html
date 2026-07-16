@@ -613,6 +613,7 @@
     <button class="btn-secondary" id="refreshBtn" style="width:100%;">最新の状態に更新</button>
   </section>
 
+
   <section class="card" id="entryCard">
     <h2>対局を記録する</h2>
     <div class="row-2col">
@@ -1382,18 +1383,38 @@ function renderChart(){
       });
     });
 
+    // 各日の最終局のインデックス（累計配列上のインデックス = 半荘番号+1）を求める
+    const dayEndIndices = new Set();
+    const dayLabels = {}; // index → 日付ラベル（M/D形式）
+    let prev = null;
+    sorted.forEach((rec, hi)=>{
+      if(prev && rec.date !== prev){
+        // 前の日の最終局 = hi（0始まりの累計配列ではhi番目）
+        dayEndIndices.add(hi);
+        const parts = prev.split('-');
+        dayLabels[hi] = `${Number(parts[1])}/${Number(parts[2])}`;
+      }
+      prev = rec.date;
+    });
+    // 最後の日の最終局
+    if(sorted.length > 0){
+      const lastIdx = sorted.length;
+      dayEndIndices.add(lastIdx);
+      const lastDate = sorted[sorted.length-1].date.split('-');
+      dayLabels[lastIdx] = `${Number(lastDate[1])}/${Number(lastDate[2])}`;
+    }
+
     const n = cum[0].length; // = sorted.length + 1
     const allValues = cum.flat();
     let minV = Math.min(...allValues, 0);
     let maxV = Math.max(...allValues, 0);
     if(minV === maxV){ minV -= 10; maxV += 10; }
-    // 上下に少し余白
     const pad = (maxV - minV) * 0.08;
     minV -= pad;
     maxV += pad;
 
-    const W = 600, H = 240;
-    const marginLeft = 46, marginRight = 10, marginTop = 12, marginBottom = 12;
+    const W = 600, H = 260;
+    const marginLeft = 46, marginRight = 10, marginTop = 12, marginBottom = 28;
     const plotW = W - marginLeft - marginRight;
     const plotH = H - marginTop - marginBottom;
 
@@ -1402,7 +1423,16 @@ function renderChart(){
 
     const zeroY = y(0);
 
-    let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%; height:220px; display:block;">`;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%; height:240px; display:block;">`;
+
+    // 日付の縦線（各日の最終局、折れ線の下に描画）
+    dayEndIndices.forEach(idx=>{
+      const lx = x(idx).toFixed(2);
+      svg += `<line x1="${lx}" y1="${marginTop}" x2="${lx}" y2="${H - marginBottom}" stroke="var(--cream-soft)" stroke-width="1" stroke-dasharray="3 3" />`;
+      if(dayLabels[idx]){
+        svg += `<text x="${lx}" y="${H - marginBottom + 14}" text-anchor="middle" font-size="10" fill="var(--ink-soft)">${dayLabels[idx]}</text>`;
+      }
+    });
 
     // 0ptのグリッド線
     svg += `<line x1="${marginLeft}" y1="${zeroY}" x2="${W-marginRight}" y2="${zeroY}" stroke="var(--cream-soft)" stroke-width="1" stroke-dasharray="4 4" />`;
@@ -1410,12 +1440,22 @@ function renderChart(){
 
     // 上端・下端のラベル
     svg += `<text x="${marginLeft-6}" y="${marginTop+10}" text-anchor="end" font-size="11" fill="var(--ink-soft)">${Math.round(maxV)}</text>`;
-    svg += `<text x="${marginLeft-6}" y="${H-marginBottom}" text-anchor="end" font-size="11" fill="var(--ink-soft)">${Math.round(minV)}</text>`;
+    svg += `<text x="${marginLeft-6}" y="${H-marginBottom-2}" text-anchor="end" font-size="11" fill="var(--ink-soft)">${Math.round(minV)}</text>`;
 
     // 各プレイヤーの折れ線
     PLAYERS.forEach((name, i)=>{
       const points = cum[i].map((v, idx)=> `${x(idx).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
       svg += `<polyline points="${points}" fill="none" stroke="${CHART_COLORS[i]}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />`;
+    });
+
+    // 各日の最終局の点に丸ドット（折れ線の上に描画）
+    PLAYERS.forEach((name, i)=>{
+      dayEndIndices.forEach(idx=>{
+        if(idx >= cum[i].length) return;
+        const cx = x(idx).toFixed(2);
+        const cy = y(cum[i][idx]).toFixed(2);
+        svg += `<circle cx="${cx}" cy="${cy}" r="4" fill="${CHART_COLORS[i]}" stroke="var(--cream)" stroke-width="1.5" />`;
+      });
     });
 
     svg += `</svg>`;
